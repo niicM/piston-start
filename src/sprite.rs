@@ -5,7 +5,9 @@ extern crate sprite;
 extern crate serde;
 extern crate graphics;
 extern crate rand;
+extern crate uuid;
 
+use piston_window::PressEvent;
 use std::rc::Rc;
 use rand::prelude::*;
 
@@ -58,6 +60,8 @@ fn main() {
         .unwrap();
 
     let mut scene = sprite::Scene::new();
+//    let mut scene: sprite::Scene<graphics::image::Image> = sprite::Scene::new();
+
     let mut texture_context = piston_window::TextureContext {
         factory: window.factory.clone(),
         encoder: window.factory.create_command_buffer().into(),
@@ -85,15 +89,16 @@ fn main() {
                     tex.clone(),
                     [t.x.into(), t.y.into(), t.width.into(), t.height.into()]))));
 
-    let mut rng = rand::prelude::thread_rng();
+//    let mut rng = rand::prelude::thread_rng();
+//    for id in &sprite_ids {
+//        scene.child_mut(id.clone())
+//            .expect("No sprite")
+//            .set_position(
+//                rng.gen_range(0.0, 300.0) as f64,
+//                rng.gen_range(0.0, 300.0) as f64);
+//    }
 
-    for id in sprite_ids {
-        scene.child_mut(id)
-            .expect("No sprite")
-            .set_position(
-                rng.gen_range(0.0, 300.0) as f64,
-                rng.gen_range(0.0, 300.0) as f64);
-    }
+    randomize_sprites(&mut scene, &mut sprite_ids);
 
     while let Some(e) = window.next() {
         scene.event(&e);
@@ -102,5 +107,21 @@ fn main() {
             piston_window::clear([1.0, 1.0, 1.0, 1.0], g);
             scene.draw(c.transform, g);
         });
+
+        if let Some(_) = e.press_args() {
+            randomize_sprites(&mut scene, &mut sprite_ids);
+        }
+    }
+}
+
+
+fn randomize_sprites<I: gfx_core::Resources>(scene: &mut sprite::Scene<piston_window::Texture<I>>, sprite_ids: &Vec<uuid::Uuid>) {
+    let mut rng = rand::prelude::thread_rng();
+    for id in sprite_ids {
+        scene.child_mut(id.clone())
+            .expect("No sprite")
+            .set_position(
+                rng.gen_range(0.0, 300.0) as f64,
+                rng.gen_range(0.0, 300.0) as f64);
     }
 }
