@@ -4,8 +4,10 @@ extern crate piston_window;
 extern crate sprite;
 extern crate serde;
 extern crate graphics;
+extern crate rand;
 
 use std::rc::Rc;
+use rand::prelude::*;
 
 mod subtextures {
 
@@ -74,17 +76,24 @@ fn main() {
         ).unwrap()
     );
 
-    let mut textures = Vec::new();
+    let mut sprite_ids = Vec::new();
 
     atlas.sub_texture.iter().for_each(
-        |t| textures.push(
+        |t| sprite_ids.push(
             scene.add_child(
                 sprite::Sprite::from_texture_rect(
                     tex.clone(),
                     [t.x.into(), t.y.into(), t.width.into(), t.height.into()]))));
 
+    let mut rng = rand::prelude::thread_rng();
 
-//    sprite.set_position(width as f64 / 2.0, height as f64 / 2.0);
+    for id in sprite_ids {
+        scene.child_mut(id)
+            .expect("No sprite")
+            .set_position(
+                rng.gen_range(0.0, 300.0) as f64,
+                rng.gen_range(0.0, 300.0) as f64);
+    }
 
     while let Some(e) = window.next() {
         scene.event(&e);
