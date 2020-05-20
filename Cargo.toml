@@ -6,7 +6,7 @@ keywords = []
 
 [[bin]]
 name = "sprite"
-path = "src/sprite_parts.rs"
+path = "src/sprite.rs"
 
 [dependencies]
 serde = { version = "1.0.110", features = ["derive"] }
