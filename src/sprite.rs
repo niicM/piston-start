@@ -108,9 +108,14 @@ fn main() {
             scene.draw(c.transform, g);
         });
 
-        if let Some(_) = e.press_args() {
-            randomize_sprites(&mut scene, &mut sprite_ids);
+        if let Some(ev) = e.press_args() {
+            use piston_window::Button::*;
+            match ev {
+                Keyboard(_) => randomize_sprites(&mut scene, &mut sprite_ids),
+                _ => move_sprites_around(&mut scene, &mut sprite_ids),
+            }
         }
+
     }
 }
 
@@ -123,5 +128,17 @@ fn randomize_sprites<I: gfx_core::Resources>(scene: &mut sprite::Scene<piston_wi
             .set_position(
                 rng.gen_range(0.0, 300.0) as f64,
                 rng.gen_range(0.0, 300.0) as f64);
+    }
+}
+
+
+fn move_sprites_around<I: gfx_core::Resources>(scene: &mut sprite::Scene<piston_window::Texture<I>>, sprite_ids: &Vec<uuid::Uuid>) {
+    let mut rng = rand::prelude::thread_rng();
+    for id in sprite_ids {
+        let action = ai_behavior::Action(sprite::Animation::Ease(
+            sprite::EaseFunction::ExponentialInOut,
+            Box::new(sprite::Animation::RotateTo(2.0, rng.gen_range(0.0, 360.0))),
+        ));
+        scene.run(id.clone(), &action);
     }
 }
