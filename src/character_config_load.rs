@@ -1,6 +1,8 @@
 use std::fs;
 use serde::Deserialize;
 use serde_json::{self, Value};
+use std::collections::HashMap;
+
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -24,6 +26,13 @@ pub struct Atlas {
 }
 
 
+// The same name can be reused in different contexts
+enum Name {
+    SlotName(String),
+    BoneName(String),
+    TextureName(String)
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Transform {
@@ -34,9 +43,9 @@ pub struct Transform {
     pub y: f64,
 
     // Scale
-    #[serde(default)]
+    #[serde(default = "default_scale")]
     pub sc_x: f64,
-    #[serde(default)]
+    #[serde(default = "default_scale")]
     pub sc_y: f64,
 
     // Rotation
@@ -46,10 +55,16 @@ pub struct Transform {
     pub sk_y: f64,
 }
 
+fn default_scale() -> f64 {
+    1.0
+}
+
 #[derive(Debug)]
 pub struct Slot {
     pub name: String,
+//    pub parent: String,
     pub texture_name: String,
+    pub sprite_id: uuid::Uuid,
     pub transform: Transform
 }
 
@@ -66,12 +81,13 @@ impl Character {
     }
 }
 
+
 pub fn get_atlas(path: &std::path::Path) -> Atlas {
     let the_file = fs::read_to_string(path).expect("Unable to read atlas file");
     serde_json::from_str(&the_file).expect("JSON was not well-formatted")
 }
 
-pub fn get_character(path: &std::path::Path) -> Character {
+pub fn get_character(path: &std::path::Path, id_map: &HashMap<String, uuid::Uuid>) -> Character {
     let the_file = fs::read_to_string(path).expect("Unable to read character file");
     let ske: Value = serde_json::from_str(&the_file).expect("JSON was not well-formatted");
     let mut character = Character::new();
@@ -85,7 +101,8 @@ pub fn get_character(path: &std::path::Path) -> Character {
                 let slot = Slot {
                     name: name.clone(),
                     texture_name: texture_name.clone(),
-                    transform: transform
+                    sprite_id: id_map.get(texture_name).expect("Can't find texture id").clone(),
+                    transform
                 };
                 character.slots.push(slot);
             }
