@@ -13,7 +13,8 @@ use std::rc::Rc;
 use rand::prelude::*;
 use std::collections::HashMap;
 
-mod character_config_load;
+mod character;
+
 
 fn main() {
     let texture_name = "robot";
@@ -39,7 +40,7 @@ fn main() {
 
     let atlas_path_buff = assets.join(texture_name.to_string() + &"_tex.json".to_string());
     let atlas_path = atlas_path_buff.as_path();
-    let atlas = character_config_load::get_atlas(atlas_path);
+    let atlas = character::get_atlas(atlas_path);
 
     let tex = Rc::new(
         piston_window::Texture::from_path(
@@ -65,11 +66,17 @@ fn main() {
 
     let character_path_buff = assets.join(texture_name.to_string() + &"_ske.json".to_string());
     let character_path = character_path_buff.as_path();
-    let character = character_config_load::get_character(character_path, &sprite_ids);
+    let character = character::get_character(character_path, &sprite_ids);
 
 //    println!("character: {:#?}\n", character);
 
     match_sprites_to_ske(&mut scene, &character);
+
+    character::get_character_2(
+        &mut scene, assets.clone(),
+        String::from("robot"),
+        &mut window
+    );
 
     while let Some(e) = window.next() {
         scene.event(&e);
@@ -117,7 +124,7 @@ fn move_sprites_around<I: gfx_core::Resources>(scene: &mut sprite::Scene<piston_
 
 fn match_sprites_to_ske<I: gfx_core::Resources>(
     scene: &mut sprite::Scene<piston_window::Texture<I>>,
-    character: &character_config_load::Character) {
+    character: &character::Character) {
 
     let (off_x, off_y) = (150.0, 290.0);
 
