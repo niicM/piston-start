@@ -9,37 +9,7 @@ use piston_window::PistonWindow;
 use sprite::Sprite;
 
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SubTexture {
-    pub name: String,
-    pub x: i32,
-    pub y: i32,
-    pub width: i32,
-    pub height: i32,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Atlas {
-    pub width: i32,
-    pub height: i32,
-    pub image_path: String,
-    #[serde(alias = "SubTexture")]
-    pub sub_texture: Vec<SubTexture>,
-}
-
-impl Atlas {
-    fn get_sub_texture(&self, name: &str) -> Option<&SubTexture> {
-        for st in &self.sub_texture {
-            if &st.name[..] == name {
-                return Some(st);
-            }
-        }
-        None
-    }
-}
-
+pub mod atlas;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -58,9 +28,13 @@ pub struct Transform {
 
     // Rotation
     #[serde(default)]
-    pub sk_x: f64,
-    #[serde(default)]
-    pub sk_y: f64,
+    pub sk_x: f64
+}
+
+impl Transform {
+    fn empty() -> Transform {
+        Transform { x: 0.0, y: 0.0, sc_x: 1.0, sc_y: 1.0, sk_x: 0.0 }
+    }
 }
 
 fn default_scale() -> f64 {
@@ -99,15 +73,15 @@ pub fn get_character_2<I: gfx_core::Resources, W: piston_window::OpenGLWindow>(
     scene: &mut sprite::Scene<piston_window::Texture<I>>,
     path: std::path::PathBuf,
     character_name: String,
-    window: &mut PistonWindow<W>
-) {
+    window: &mut PistonWindow<W>)
+{
     // Setup paths for different files
     let path_ske_j = path.join(character_name.clone() + "_ske.json");
     let path_tex_j = path.join(character_name.clone() + "_tex.json");
     let path_tex_p = path.join(character_name.clone() + "_tex.png");
     let path_bone_p = path.join("bone_tex.png");
 
-    let atlas = get_atlas(path_tex_j.as_path());
+    let my_atlas = atlas::Atlas::from_file(path_tex_j.as_path());
 
     // Textures
     let mut texture_context = piston_window::TextureContext {
@@ -136,12 +110,16 @@ pub fn get_character_2<I: gfx_core::Resources, W: piston_window::OpenGLWindow>(
 
     let mut sprite_map = HashMap::new();
 
-    // sprites SubTexture and transform
+    // We need a way to refer to the Sprites while moving them to Scene
+    let mut sprite_ref_map = HashMap::new();
+//    let mut id_map = HashMap::new();
+
+    // sprites SubTexture 1and transform
     if let Value::Array(slots) = &ske["armature"][0]["skin"][0]["slot"] {
         for slot in slots {
             if let (Value::String(name), Value::String(texture_name)) =
                    (&slot["name"], &slot["display"][0]["name"]) {
-                let t = atlas.get_sub_texture(&texture_name[..]).unwrap();
+                let t = my_atlas.get_sub_texture(&texture_name[..]).unwrap();
                 let mut sprite = Sprite::from_texture_rect(
                     tex.clone(),
                     [t.x.clone().into(), t.y.clone().into(), t.width.clone().into(), t.height.clone().into()]);
@@ -152,6 +130,7 @@ pub fn get_character_2<I: gfx_core::Resources, W: piston_window::OpenGLWindow>(
                 sprite.set_scale(transform.sc_x.clone(), transform.sc_y.clone());
 
                 sprite_map.insert(Name::SlotName(name.clone()), sprite);
+                sprite_ref_map.insert(Name::SlotName(name.clone()), &sprite_map.get(&Name::SlotName(name.clone())).unwrap());
             }
         }
     }
@@ -162,26 +141,39 @@ pub fn get_character_2<I: gfx_core::Resources, W: piston_window::OpenGLWindow>(
         for bone in bones {
             if let Value::String(name) = &bone["name"] {
                 let mut sprite = Sprite::from_texture(tex_bone.clone());
-                let transform = serde_json::from_value::<Transform>(bone["transform"].clone()).unwrap();
+                let transform = match bone.get("transform") {
+                    Some(t) => serde_json::from_value::<Transform>(t.clone()).unwrap(),
+                    None => Transform::empty()
+                };
+                sprite.set_position(transform.x.clone(), transform.y.clone());
+                sprite.set_rotation(transform.sk_x.clone());
+                sprite.set_scale(transform.sc_x.clone(), transform.sc_y.clone());
+                sprite.set_anchor(0.0, 0.0);
 
                 sprite_map.insert(Name::BoneName(name.clone()), sprite);
+//                sprite_ref_map.insert(Name::SlotName(name.clone()), &sprite);
             }
         }
     }
 
     // Sprites parent info
-    if let Value::Array(v) = &ske["armature"][0]["slot"] {}
+//    let root_name = Name::BoneName("root".to_string());
+//    id_map.insert(
+//        root_name.clone(),
+//        scene.add(sprite_map.remove(&root_name))
+//    );
+//
+//    if let Value::Array(slots) = &ske["armature"][0]["slot"] {
+//        for slot in slots {
+//            if let (Value::String(name), Value::String(name)) =
+//                   (&slot["name"], slot["parent"]) {
+//
+//            }
+//        }
+//    }
 
     // Bone (name), parent and (transform)
     if let Value::Array(v) = &ske["armature"][0]["bone"] {}
-
-
-    let atlas = get_atlas(path_tex_j.as_path());
-}
-
-pub fn get_atlas(path: &std::path::Path) -> Atlas {
-    let the_file = fs::read_to_string(path).expect("Unable to read atlas file");
-    serde_json::from_str(&the_file).expect("JSON was not well-formatted")
 }
 
 pub fn get_character(path: &std::path::Path, id_map: &HashMap<String, uuid::Uuid>) -> Character {

@@ -40,7 +40,7 @@ fn main() {
 
     let atlas_path_buff = assets.join(texture_name.to_string() + &"_tex.json".to_string());
     let atlas_path = atlas_path_buff.as_path();
-    let atlas = character::get_atlas(atlas_path);
+    let atlas = character::atlas::Atlas::from_file(atlas_path);
 
     let tex = Rc::new(
         piston_window::Texture::from_path(
