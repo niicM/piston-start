@@ -65,12 +65,13 @@ impl Character {
 #[derive(Debug, PartialEq, Eq, Hash)]
 enum Name {
     SlotName(String),
-    BoneName(String),
-    TextureName(String),
+    BoneName(String)
 }
 
-pub fn get_character_2<I: gfx_core::Resources, W: piston_window::OpenGLWindow>(
-    scene: &mut sprite::Scene<piston_window::Texture<I>>,
+
+//gfx_core::Resources
+pub fn get_character_2<W: piston_window::OpenGLWindow>(
+    scene: &mut sprite::Scene<piston_window::Texture<gfx_device_gl::Resources>>,
     path: std::path::PathBuf,
     character_name: String,
     window: &mut PistonWindow<W>)
@@ -78,7 +79,7 @@ pub fn get_character_2<I: gfx_core::Resources, W: piston_window::OpenGLWindow>(
     // Setup paths for different files
     let path_ske_j = path.join(character_name.clone() + "_ske.json");
     let path_tex_j = path.join(character_name.clone() + "_tex.json");
-    let path_tex_p = path.join(character_name.clone() + "_tex.png");
+    let path_tex_p = path.join(character_name + "_tex.png");
     let path_bone_p = path.join("bone_tex.png");
 
     let my_atlas = atlas::Atlas::from_file(path_tex_j.as_path());
@@ -105,16 +106,15 @@ pub fn get_character_2<I: gfx_core::Resources, W: piston_window::OpenGLWindow>(
         ).unwrap()
     );
 
-    let the_ske_file = fs::read_to_string(path).expect("Unable to read character file");
+    let the_ske_file = fs::read_to_string(path_ske_j).expect("Unable to read character file");
     let ske: Value = serde_json::from_str(&the_ske_file).expect("JSON was not well-formatted");
 
     let mut sprite_map = HashMap::new();
 
-    // We need a way to refer to the Sprites while moving them to Scene
-    let mut sprite_ref_map = HashMap::new();
-//    let mut id_map = HashMap::new();
+    // We need a way to refer to the Sprites while moving them to the Scene or into other Sprites
+    let mut sprite_ids: HashMap<Name, uuid::Uuid> = HashMap::new();
 
-    // sprites SubTexture 1and transform
+    // sprites SubTexture and transform
     if let Value::Array(slots) = &ske["armature"][0]["skin"][0]["slot"] {
         for slot in slots {
             if let (Value::String(name), Value::String(texture_name)) =
@@ -129,8 +129,8 @@ pub fn get_character_2<I: gfx_core::Resources, W: piston_window::OpenGLWindow>(
                 sprite.set_rotation(transform.sk_x.clone());
                 sprite.set_scale(transform.sc_x.clone(), transform.sc_y.clone());
 
+                sprite_ids.insert(Name::SlotName(name.clone()), sprite.id());
                 sprite_map.insert(Name::SlotName(name.clone()), sprite);
-                sprite_ref_map.insert(Name::SlotName(name.clone()), &sprite_map.get(&Name::SlotName(name.clone())).unwrap());
             }
         }
     }
@@ -139,7 +139,7 @@ pub fn get_character_2<I: gfx_core::Resources, W: piston_window::OpenGLWindow>(
     // Bone name, (parent) and transform
     if let Value::Array(bones) = &ske["armature"][0]["bone"] {
         for bone in bones {
-            if let Value::String(name) = &bone["name"] {
+            if let Some(Value::String(name)) = &bone.get("name") {
                 let mut sprite = Sprite::from_texture(tex_bone.clone());
                 let transform = match bone.get("transform") {
                     Some(t) => serde_json::from_value::<Transform>(t.clone()).unwrap(),
@@ -150,31 +150,70 @@ pub fn get_character_2<I: gfx_core::Resources, W: piston_window::OpenGLWindow>(
                 sprite.set_scale(transform.sc_x.clone(), transform.sc_y.clone());
                 sprite.set_anchor(0.0, 0.0);
 
+                sprite_ids.insert(Name::BoneName(name.clone()), sprite.id());
                 sprite_map.insert(Name::BoneName(name.clone()), sprite);
-//                sprite_ref_map.insert(Name::SlotName(name.clone()), &sprite);
             }
         }
     }
 
-    // Sprites parent info
-//    let root_name = Name::BoneName("root".to_string());
-//    id_map.insert(
-//        root_name.clone(),
-//        scene.add(sprite_map.remove(&root_name))
-//    );
-//
-//    if let Value::Array(slots) = &ske["armature"][0]["slot"] {
-//        for slot in slots {
-//            if let (Value::String(name), Value::String(name)) =
-//                   (&slot["name"], slot["parent"]) {
-//
-//            }
-//        }
-//    }
+    // root is the only sprite that is directly in the scene
+    // The root object is not explicit in the json
+    let root = Sprite::from_texture(tex_bone.clone());
+    sprite_ids.insert(Name::BoneName("root".to_string()), scene.add_child(root));
 
+    // Parent slots
+    if let Value::Array(slots) = &ske["armature"][0]["slot"] {
+        for slot in slots {
+            if let (Some(Value::String(name)), Some(Value::String(parent))) =
+                   (&slot.get("name"), &slot.get("parent")) {
+
+                let parent_name = Name::SlotName(parent.clone());
+                let child_name = Name::SlotName(name.clone());
+
+                let parent_id = sprite_ids.get(&parent_name)
+                    .expect("Unknown parent name");
+
+                let child_sprite = sprite_map.remove(&child_name)
+                    .expect("Child not present");
+
+                let parent_sprite =
+                    scene.child_mut(parent_id.clone()).or(sprite_map.get_mut(&parent_name))
+                        .expect("Can't find parent sprite");
+
+                parent_sprite.add_child(child_sprite);
+            }
+        }
+    }
+
+    // Parent bones
     // Bone (name), parent and (transform)
-    if let Value::Array(v) = &ske["armature"][0]["bone"] {}
+    if let Value::Array(bones) = &ske["armature"][0]["bone"] {
+        for bone in bones {
+            if let (Some(Value::String(name)), Some(Value::String(parent))) =
+                   (bone.get("name"), bone.get("parent")) {
+
+                let parent_name = Name::BoneName(parent.clone());
+                let child_name = Name::BoneName(name.clone());
+
+                let parent_id = sprite_ids.get(&parent_name)
+                    .expect("Unknown parent name");
+
+                let child_sprite = sprite_map.remove(&child_name)
+                    .expect("Child not present");
+
+                let parent_sprite =
+                    scene.child_mut(parent_id.clone()).or(sprite_map.get_mut(&parent_name))
+                        .expect("Can't find parent sprite");
+
+                parent_sprite.add_child(child_sprite);
+            }
+        }
+    }
 }
+
+
+
+
 
 pub fn get_character(path: &std::path::Path, id_map: &HashMap<String, uuid::Uuid>) -> Character {
     let the_file = fs::read_to_string(path).expect("Unable to read character file");
