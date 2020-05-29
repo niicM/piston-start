@@ -10,6 +10,7 @@ use sprite::Sprite;
 
 
 pub mod atlas;
+pub mod animation;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -63,7 +64,7 @@ impl Character {
 
 // The same name can be reused in different contexts
 #[derive(Debug, PartialEq, Eq, Hash)]
-enum Name {
+pub enum Name {
     SlotName(String),
     BoneName(String)
 }
@@ -74,7 +75,7 @@ pub fn get_character_2<W: piston_window::OpenGLWindow>(
     scene: &mut sprite::Scene<piston_window::Texture<gfx_device_gl::Resources>>,
     path: std::path::PathBuf,
     character_name: String,
-    window: &mut PistonWindow<W>)
+    window: &mut PistonWindow<W>) -> Option<animation::Animations>
 {
     // Setup paths for different files
     let path_ske_j = path.join(character_name.clone() + "_ske.json");
@@ -167,7 +168,7 @@ pub fn get_character_2<W: piston_window::OpenGLWindow>(
             if let (Some(Value::String(name)), Some(Value::String(parent))) =
                    (&slot.get("name"), &slot.get("parent")) {
 
-                let parent_name = Name::SlotName(parent.clone());
+                let parent_name = Name::BoneName(parent.clone());
                 let child_name = Name::SlotName(name.clone());
 
                 let parent_id = sprite_ids.get(&parent_name)
@@ -209,6 +210,11 @@ pub fn get_character_2<W: piston_window::OpenGLWindow>(
             }
         }
     }
+
+    if let Value::Array(json_val) = &ske["armature"][0]["animation"][0]["bone"] {
+        return Some(animation::Animations::from_dragon(json_val.clone(), &sprite_ids))
+    }
+    None
 }
 
 
