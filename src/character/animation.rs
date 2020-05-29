@@ -51,7 +51,7 @@ impl Animations {
 
         let n = frames.len();
         for idx in 1..n {
-            let duration = frames[idx - 1].duration;
+            let duration = frames[idx - 1].duration / 5.0;
             let rotate = frames[idx].rotate - frames[idx - 1].rotate;
             vector.push(Action(Ease(
                 EaseFunction::CubicInOut,
@@ -71,7 +71,7 @@ impl Animations {
 
         let n = frames.len();
         for idx in 1..n {
-            let duration = frames[idx - 1].duration;
+            let duration = frames[idx - 1].duration / 5.0;
             let x = frames[idx].x - frames[idx - 1].x;
             let y = frames[idx].y - frames[idx - 1].y;
             vector.push(Action(Ease(
