@@ -3,7 +3,7 @@ use ai_behavior::{Behavior, Action, WhenAll, Sequence};
 use sprite::{EaseFunction, Animation::{Ease, RotateBy, MoveBy}};
 use serde::Deserialize;
 use serde_json::Value;
-
+use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 struct Translate {
@@ -24,16 +24,19 @@ struct Rotate {
 }
 
 
-pub struct Animations(Vec<(uuid::Uuid, Behavior<sprite::Animation>)>);
+pub struct Animations{
+    pub anims: Vec<(Uuid, Behavior<sprite::Animation>)>,
+    pub root_id: Uuid
+}
 
 impl Animations {
 
-    fn new() -> Animations {
-        Animations(Vec::new())
-    }
+//    fn new() -> Animations {
+//        Animations(Vec::new())
+//    }
 
     pub fn play (&self, scene: &mut sprite::Scene<piston_window::Texture<gfx_device_gl::Resources>>) {
-        for (id, anim) in &self.0 {
+        for (id, anim) in &self.anims {
             scene.run(id.clone(), anim);
         }
     }
@@ -79,8 +82,11 @@ impl Animations {
         Sequence(vector)
     }
 
-    pub fn from_dragon(json_val: Vec<Value>, id_map: &HashMap<super::Name, uuid::Uuid>) -> Animations {
-        let mut anim = Animations::new();
+    pub fn from_dragon(json_val: Vec<Value>, id_map: &HashMap<super::Name, Uuid>, root_id: Uuid) -> Animations {
+//        let mut anim = Animations::new();
+
+        let mut anims = Vec::<(Uuid, Behavior<sprite::Animation>)>::new();
+
 
         for bone_anim in json_val {
 
@@ -95,12 +101,12 @@ impl Animations {
                     vector.push(Animations::from_dragon_rotation(frames.clone()));
                 }
 
-                anim.0.push((
+                anims.push((
                     id_map.get(&super::Name::BoneName(name.clone())).expect("No bone name").clone(), // Uuid
                     WhenAll(vector) // Rotation and translation
                 ));
             }
         }
-        anim
+        Animations { anims, root_id }
     }
 }

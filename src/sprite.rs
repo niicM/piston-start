@@ -79,6 +79,9 @@ fn main() {
         &mut window
     ).expect("Problem creating character");
 
+    let root = scene.child_mut(character.root_id).expect("Can't find sprite");
+    root.set_position(400.0, 400.0);
+
     character.play(&mut scene);
 
     while let Some(e) = window.next() {

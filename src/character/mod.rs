@@ -212,7 +212,11 @@ pub fn get_character<W: piston_window::OpenGLWindow>(
     }
 
     if let Value::Array(json_val) = &ske["armature"][0]["animation"][0]["bone"] {
-        return Some(animation::Animations::from_dragon(json_val.clone(), &sprite_ids))
+        return Some(animation::Animations::from_dragon(
+            json_val.clone(),
+            &sprite_ids,
+            sprite_ids.get( &Name::BoneName("root".to_string())).expect("Problem with root id").clone()
+        ));
     }
     None
 }
