@@ -19,7 +19,7 @@ mod character;
 fn main() {
     let texture_name = "robot";
 
-    let (width, height) = (300, 300);
+    let (width, height) = (600, 600);
     let opengl = piston_window::OpenGL::V3_2;
     let mut window: piston_window::PistonWindow = piston_window::WindowSettings::new("piston: sprite", (width, height))
         .exit_on_esc(true)
@@ -33,50 +33,53 @@ fn main() {
 
     let mut scene = sprite::Scene::new();
 
-    let mut texture_context = piston_window::TextureContext {
-        factory: window.factory.clone(),
-        encoder: window.factory.create_command_buffer().into(),
-    };
+//    let mut texture_context = piston_window::TextureContext {
+//        factory: window.factory.clone(),
+//        encoder: window.factory.create_command_buffer().into(),
+//    };
 
-    let atlas_path_buff = assets.join(texture_name.to_string() + &"_tex.json".to_string());
-    let atlas_path = atlas_path_buff.as_path();
-    let atlas = character::atlas::Atlas::from_file(atlas_path);
+//    let atlas_path_buff = assets.join(texture_name.to_string() + &"_tex.json".to_string());
+//    let atlas_path = atlas_path_buff.as_path();
+//    let atlas = character::atlas::Atlas::from_file(atlas_path);
 
-    let tex = Rc::new(
-        piston_window::Texture::from_path(
-            &mut texture_context,
-            assets.join(texture_name.to_string() + &"_tex.png".to_string()),
-            piston_window::Flip::None,
-            &piston_window::TextureSettings::new(),
-        ).unwrap()
-    );
+//    let tex = Rc::new(
+//        piston_window::Texture::from_path(
+//            &mut texture_context,
+//            assets.join(texture_name.to_string() + &"_tex.png".to_string()),
+//            piston_window::Flip::None,
+//            &piston_window::TextureSettings::new(),
+//        ).unwrap()
+//    );
 
 
-    let mut sprite_ids_vec = Vec::new();
-    let mut sprite_ids = HashMap::<String, uuid::Uuid>::new();
+//    let mut sprite_ids_vec = Vec::new();
+//    let mut sprite_ids = HashMap::<String, uuid::Uuid>::new();
 
-    for t in &atlas.sub_texture {
-        let id = scene.add_child(
-            sprite::Sprite::from_texture_rect(
-                tex.clone(),
-                [t.x.into(), t.y.into(), t.width.into(), t.height.into()]));
-        sprite_ids.insert(t.name.clone(), id);
-        sprite_ids_vec.push(id);
-    }
+//    for t in &atlas.sub_texture {
+//        let id = scene.add_child(
+//            sprite::Sprite::from_texture_rect(
+//                tex.clone(),
+//                [t.x.into(), t.y.into(), t.width.into(), t.height.into()]));
+//        sprite_ids.insert(t.name.clone(), id);
+//        sprite_ids_vec.push(id);
+//    }
 
-    let character_path_buff = assets.join(texture_name.to_string() + &"_ske.json".to_string());
-    let character_path = character_path_buff.as_path();
-    let character = character::get_character(character_path, &sprite_ids);
+//    let character_path_buff = assets.join(texture_name.to_string() + &"_ske.json".to_string());
+//    let character_path = character_path_buff.as_path();
+//    let character = character::get_character(character_path, &sprite_ids);
 
 //    println!("character: {:#?}\n", character);
 
-    match_sprites_to_ske(&mut scene, &character);
+//    match_sprites_to_ske(&mut scene, &character);
 
-    character::get_character_2(
-        &mut scene, assets.clone(),
+    let character = character::get_character(
+        &mut scene,
+        assets.clone(),
         String::from("robot"),
         &mut window
-    );
+    ).expect("Problem creating character");
+
+    character.play(&mut scene);
 
     while let Some(e) = window.next() {
         scene.event(&e);
@@ -88,10 +91,10 @@ fn main() {
 
         if let Some(ev) = e.press_args() {
             use piston_window::Button::*;
-            match ev {
-                Keyboard(_) => randomize_sprites(&mut scene, &mut sprite_ids_vec),
-                _ => move_sprites_around(&mut scene, &mut sprite_ids_vec),
-            }
+//            match ev {
+//                Keyboard(_) => randomize_sprites(&mut scene, &mut sprite_ids_vec),
+//                _ => move_sprites_around(&mut scene, &mut sprite_ids_vec),
+//            }
         }
 
     }

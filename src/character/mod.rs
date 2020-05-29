@@ -71,7 +71,7 @@ pub enum Name {
 
 
 //gfx_core::Resources
-pub fn get_character_2<W: piston_window::OpenGLWindow>(
+pub fn get_character<W: piston_window::OpenGLWindow>(
     scene: &mut sprite::Scene<piston_window::Texture<gfx_device_gl::Resources>>,
     path: std::path::PathBuf,
     character_name: String,
@@ -218,33 +218,30 @@ pub fn get_character_2<W: piston_window::OpenGLWindow>(
 }
 
 
-
-
-
-pub fn get_character(path: &std::path::Path, id_map: &HashMap<String, uuid::Uuid>) -> Character {
-    let the_file = fs::read_to_string(path).expect("Unable to read character file");
-    let ske: Value = serde_json::from_str(&the_file).expect("JSON was not well-formatted");
-    let mut character = Character::new();
-
-    if let Value::Array(v) = &ske["armature"][0]["skin"][0]["slot"] {
-        v.iter().for_each(|slot_read| {
-            if let (Value::String(name), Value::String(texture_name)) =
-                (&slot_read["name"], &slot_read["display"][0]["name"])
-            {
-                let transform =
-                    serde_json::from_value(slot_read["display"][0]["transform"].clone()).unwrap();
-                let slot = Slot {
-                    name: name.clone(),
-                    texture_name: texture_name.clone(),
-                    sprite_id: id_map
-                        .get(texture_name)
-                        .expect("Can't find texture id")
-                        .clone(),
-                    transform,
-                };
-                character.slots.push(slot);
-            }
-        });
-    }
-    character
-}
+//pub fn get_character(path: &std::path::Path, id_map: &HashMap<String, uuid::Uuid>) -> Character {
+//    let the_file = fs::read_to_string(path).expect("Unable to read character file");
+//    let ske: Value = serde_json::from_str(&the_file).expect("JSON was not well-formatted");
+//    let mut character = Character::new();
+//
+//    if let Value::Array(v) = &ske["armature"][0]["skin"][0]["slot"] {
+//        v.iter().for_each(|slot_read| {
+//            if let (Value::String(name), Value::String(texture_name)) =
+//                (&slot_read["name"], &slot_read["display"][0]["name"])
+//            {
+//                let transform =
+//                    serde_json::from_value(slot_read["display"][0]["transform"].clone()).unwrap();
+//                let slot = Slot {
+//                    name: name.clone(),
+//                    texture_name: texture_name.clone(),
+//                    sprite_id: id_map
+//                        .get(texture_name)
+//                        .expect("Can't find texture id")
+//                        .clone(),
+//                    transform,
+//                };
+//                character.slots.push(slot);
+//            }
+//        });
+//    }
+//    character
+//}
