@@ -149,7 +149,7 @@ pub fn get_character<W: piston_window::OpenGLWindow>(
                 sprite.set_position(transform.x.clone(), transform.y.clone());
                 sprite.set_rotation(transform.sk_x.clone());
                 sprite.set_scale(transform.sc_x.clone(), transform.sc_y.clone());
-                sprite.set_anchor(0.0, 0.0);
+//                sprite.set_anchor(0.0, 0.0);
 
                 sprite_ids.insert(Name::BoneName(name.clone()), sprite.id());
                 sprite_map.insert(Name::BoneName(name.clone()), sprite);

@@ -82,7 +82,7 @@ fn main() {
     let root = scene.child_mut(character.root_id).expect("Can't find sprite");
     root.set_position(400.0, 400.0);
 
-    character.play(&mut scene);
+//    character.play(&mut scene);
 
     while let Some(e) = window.next() {
         scene.event(&e);
@@ -94,10 +94,9 @@ fn main() {
 
         if let Some(ev) = e.press_args() {
             use piston_window::Button::*;
-//            match ev {
-//                Keyboard(_) => randomize_sprites(&mut scene, &mut sprite_ids_vec),
-//                _ => move_sprites_around(&mut scene, &mut sprite_ids_vec),
-//            }
+            match ev {
+                _ => character.play(&mut scene)
+            }
         }
 
     }
