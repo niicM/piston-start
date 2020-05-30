@@ -31,10 +31,6 @@ pub struct Animations{
 
 impl Animations {
 
-//    fn new() -> Animations {
-//        Animations(Vec::new())
-//    }
-
     pub fn play (&self, scene: &mut sprite::Scene<piston_window::Texture<gfx_device_gl::Resources>>) {
         for (id, anim) in &self.anims {
             scene.run(id.clone(), anim);
@@ -54,7 +50,7 @@ impl Animations {
             let duration = frames[idx - 1].duration / 5.0;
             let rotate = frames[idx].rotate - frames[idx - 1].rotate;
             vector.push(Action(Ease(
-                EaseFunction::CubicInOut,
+                EaseFunction::ExponentialInOut,
                 Box::new(RotateBy(duration, rotate)),
             )));
         }
@@ -75,7 +71,7 @@ impl Animations {
             let x = frames[idx].x - frames[idx - 1].x;
             let y = frames[idx].y - frames[idx - 1].y;
             vector.push(Action(Ease(
-                EaseFunction::CubicInOut,
+                EaseFunction::ExponentialInOut,
                 Box::new(MoveBy(duration, x, y)),
             )));
         }
@@ -83,7 +79,6 @@ impl Animations {
     }
 
     pub fn from_dragon(json_val: Vec<Value>, id_map: &HashMap<super::Name, Uuid>, root_id: Uuid) -> Animations {
-//        let mut anim = Animations::new();
 
         let mut anims = Vec::<(Uuid, Behavior<sprite::Animation>)>::new();
 
